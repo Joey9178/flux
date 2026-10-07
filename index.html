@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flux 流畅 · 跨设备省心中枢</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%234FC3F7'/%3E%3Cstop offset='1' stop-color='%2321D4A6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M5 20 L16 6 L27 20 L16 16 Z' fill='url(%23g)'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#070b16;
+    --bg2:#0a1220;
+    --panel:rgba(255,255,255,.04);
+    --line:rgba(255,255,255,.09);
+    --txt:#eaf2ff;
+    --sub:#9db1d0;
+    --accent:#4FC3F7;
+    --accent2:#21D4A6;
+    --accent3:#7C6CFF;
+    --grad:linear-gradient(100deg,#4FC3F7,#21D4A6 55%,#7C6CFF);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--txt);line-height:1.7;
+    overflow-x:hidden;
+  }
+  ::selection{background:rgba(79,195,247,.35)}
+
+  .bg-glow{position:fixed;inset:0;z-index:-2;overflow:hidden}
+  .bg-glow .blob{position:absolute;border-radius:50%;filter:blur(120px);opacity:.5}
+  .bg-glow .b1{width:55vw;height:55vw;top:-15vw;left:-10vw;background:radial-gradient(circle,#1c4e77,transparent 65%)}
+  .bg-glow .b2{width:48vw;height:48vw;bottom:-12vw;right:-8vw;background:radial-gradient(circle,#175c4c,transparent 65%)}
+  .bg-glow .b3{width:40vw;height:40vw;top:35%;left:55%;background:radial-gradient(circle,#3a2f7a,transparent 65%);opacity:.4}
+  .grain{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+    background-image:radial-gradient(rgba(255,255,255,.04) 1px,transparent 1px);background-size:4px 4px}
+
+  .wrap{max-width:1120px;margin:0 auto;padding:0 28px}
+
+  nav{position:fixed;top:0;left:0;right:0;z-index:100;
+    backdrop-filter:blur(18px);background:rgba(7,11,22,.55);border-bottom:1px solid var(--line)}
+  .nav-in{max-width:1120px;margin:0 auto;padding:14px 28px;display:flex;align-items:center;justify-content:space-between}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:.5px}
+  .logo .mark{width:26px;height:26px}
+  .logo em{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .nav-links{display:flex;gap:30px;align-items:center}
+  .nav-links a{color:var(--sub);text-decoration:none;font-size:14.5px;transition:color .2s}
+  .nav-links a:hover{color:var(--txt)}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:999px;
+    font-weight:600;font-size:14.5px;text-decoration:none;border:none;cursor:pointer;transition:transform .2s,box-shadow .2s}
+  .btn-primary{background:var(--grad);color:#04121a;box-shadow:0 8px 30px rgba(79,195,247,.35)}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(33,212,166,.4)}
+  .btn-ghost{border:1px solid var(--line);color:var(--txt);background:rgba(255,255,255,.03)}
+  .btn-ghost:hover{border-color:rgba(79,195,247,.5);transform:translateY(-2px)}
+  .menu-btn{display:none;background:none;border:none;color:var(--txt);cursor:pointer;width:44px;height:44px;align-items:center;justify-content:center}
+
+  .hero{position:relative;padding:160px 0 90px;text-align:center;overflow:hidden}
+  .badge{display:inline-flex;align-items:center;gap:8px;padding:7px 16px;border-radius:999px;
+    border:1px solid rgba(79,195,247,.4);background:rgba(79,195,247,.08);color:var(--accent);
+    font-size:13px;margin-bottom:26px}
+  .badge .dot{width:7px;height:7px;border-radius:50%;background:var(--accent2);box-shadow:0 0 10px var(--accent2);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .hero h1{font-size:clamp(40px,7vw,74px);line-height:1.12;font-weight:900;letter-spacing:-1px;margin-bottom:24px}
+  .hero h1 .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p.lead{font-size:clamp(17px,2.3vw,21px);color:var(--sub);max-width:640px;margin:0 auto 36px}
+  .hero-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .hero-stats{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:60px}
+  .stat{flex:1;min-width:150px;max-width:220px;padding:20px;border:1px solid var(--line);border-radius:16px;
+    background:var(--panel);text-align:center}
+  .stat .n{font-size:28px;font-weight:800;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .stat .l{font-size:13px;color:var(--sub);margin-top:4px}
+
+  .flow-stage{position:relative;max-width:860px;margin:54px auto 0;height:300px}
+  .device{position:absolute;width:190px;border-radius:18px;background:linear-gradient(160deg,#101a30,#0a1220);
+    border:1px solid rgba(79,195,247,.35);box-shadow:0 20px 60px rgba(0,0,0,.5),inset 0 0 40px rgba(79,195,247,.05);
+    padding:14px}
+  .device .scr{background:linear-gradient(150deg,rgba(79,195,247,.12),rgba(33,212,166,.06));border-radius:10px;height:100%;
+    display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--sub)}
+  .device.pc{left:0;top:40px;height:200px;animation:floaty 6s ease-in-out infinite}
+  .device.phone{right:0;top:10px;height:240px;width:120px;animation:floaty 6s ease-in-out 1s infinite}
+  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+  .flow-line{position:absolute;top:50%;left:50%;width:0;height:2px;border-radius:2px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));box-shadow:0 0 12px var(--accent)}
+  .flow-line.l1{animation:flow 3.4s ease-in-out infinite}
+  .flow-line.l2{animation:flow 3.4s ease-in-out 1.1s infinite;background:linear-gradient(90deg,var(--accent2),var(--accent3))}
+  @keyframes flow{0%{width:0;opacity:0}15%{opacity:1}80%{opacity:1}100%{width:400px;opacity:0}}
+  .flow-msg{position:absolute;padding:6px 12px;border-radius:8px;font-size:12px;color:var(--txt);
+    background:rgba(12,22,40,.9);border:1px solid rgba(79,195,247,.4);white-space:nowrap;opacity:0}
+  .flow-msg.m1{top:70px;left:50%;animation:msg 3.4s ease-in-out .3s infinite}
+  .flow-msg.m2{top:150px;left:50%;animation:msg 3.4s ease-in-out 1.4s infinite}
+  @keyframes msg{0%{opacity:0;transform:translateY(8px)}20%{opacity:1}70%{opacity:1}100%{opacity:0;transform:translateY(-8px)}}
+
+  section{padding:90px 0}
+  .sec-head{text-align:center;max-width:720px;margin:0 auto 56px}
+  .sec-head .eyebrow{display:inline-block;font-size:13px;letter-spacing:2px;color:var(--accent);margin-bottom:14px;text-transform:uppercase}
+  .sec-head h2{font-size:clamp(30px,4.5vw,44px);font-weight:800;line-height:1.2;margin-bottom:16px}
+  .sec-head p{color:var(--sub);font-size:16.5px}
+
+  .reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease}
+  .reveal.in{opacity:1;transform:none}
+
+  .pain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+  .pain{display:flex;gap:14px;align-items:flex-start;padding:24px;border-radius:16px;border:1px solid var(--line);background:var(--panel)}
+  .pain .ic{width:42px;height:42px;flex-shrink:0;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(140deg,rgba(79,195,247,.18),rgba(33,212,166,.1));color:var(--accent)}
+  .pain h3{font-size:16.5px;margin-bottom:6px}
+  .pain p{font-size:14px;color:var(--sub)}
+
+  .feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:22px}
+  .feat{padding:28px;border-radius:18px;border:1px solid var(--line);background:var(--panel);position:relative;overflow:hidden;
+    transition:transform .3s,border-color .3s}
+  .feat:hover{transform:translateY(-6px);border-color:rgba(79,195,247,.5)}
+  .feat::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--grad);opacity:.7}
+  .feat .num{font-size:13px;color:var(--accent);font-weight:700;letter-spacing:1px;margin-bottom:10px}
+  .feat h3{font-size:19px;margin-bottom:10px}
+  .feat p{font-size:14.5px;color:var(--sub)}
+  .feat .tag{display:inline-block;margin-top:14px;padding:4px 10px;border-radius:6px;font-size:12px;
+    background:rgba(33,212,166,.12);color:var(--accent2)}
+
+  .people-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px}
+  .person{padding:28px;border-radius:18px;border:1px solid var(--line);background:var(--panel);text-align:center}
+  .person .avatar{width:64px;height:64px;margin:0 auto 16px;border-radius:18px;display:flex;align-items:center;justify-content:center;
+    font-size:28px;background:linear-gradient(140deg,rgba(79,195,247,.2),rgba(124,108,255,.15));color:var(--txt)}
+  .person h3{font-size:19px;margin-bottom:10px}
+  .person p{font-size:14.5px;color:var(--sub);margin-bottom:14px}
+  .person .mini{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+  .person .mini span{font-size:12px;padding:4px 10px;border-radius:6px;background:rgba(255,255,255,.05);color:var(--sub);border:1px solid var(--line)}
+
+  .roadmap{position:relative;max-width:760px;margin:0 auto}
+  .roadmap::before{content:"";position:absolute;left:14px;top:8px;bottom:8px;width:2px;
+    background:linear-gradient(var(--accent),var(--accent2),var(--accent3))}
+  .step{position:relative;padding:0 0 34px 56px}
+  .step .dot{position:absolute;left:6px;top:6px;width:18px;height:18px;border-radius:50%;
+    background:var(--bg);border:3px solid var(--accent2);box-shadow:0 0 14px rgba(33,212,166,.5)}
+  .step h3{font-size:18px;margin-bottom:6px}
+  .step .phase{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:1px;margin-bottom:4px}
+  .step p{font-size:14px;color:var(--sub)}
+
+  .cmp{overflow-x:auto;border:1px solid var(--line);border-radius:16px}
+  table{width:100%;border-collapse:collapse;min-width:640px;background:rgba(255,255,255,.02)}
+  th,td{padding:16px 18px;text-align:left;font-size:14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:rgba(79,195,247,.08);color:var(--txt);font-weight:700;font-size:13.5px;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  td:first-child{color:var(--accent);font-weight:600;white-space:nowrap}
+  .yes{color:var(--accent2);font-weight:600}
+
+  .cta-box{position:relative;text-align:center;padding:70px 30px;border-radius:24px;overflow:hidden;
+    border:1px solid rgba(79,195,247,.3);background:linear-gradient(150deg,rgba(28,62,110,.4),rgba(23,80,66,.3))}
+  .cta-box h2{font-size:clamp(28px,4vw,40px);font-weight:800;margin-bottom:16px}
+  .cta-box p{color:var(--sub);max-width:520px;margin:0 auto 30px;font-size:16px}
+
+  footer{padding:44px 0;border-top:1px solid var(--line);color:var(--sub);font-size:13.5px}
+  .foot-in{max-width:1120px;margin:0 auto;padding:0 28px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+  @media(max-width:760px){
+    .nav-links{display:none;position:absolute;top:60px;left:0;right:0;flex-direction:column;gap:0;
+      background:rgba(7,11,22,.97);border-bottom:1px solid var(--line);padding:10px 0}
+    .nav-links.open{display:flex}
+    .nav-links a{padding:14px 28px;width:100%}
+    .menu-btn{display:block}
+    .flow-stage{height:220px}
+    .device.pc{width:150px;height:160px;top:30px}
+    .device.phone{width:90px;height:180px;top:0}
+    @keyframes flow{0%{width:0;opacity:0}15%{opacity:1}80%{opacity:1}100%{width:240px;opacity:0}}
+    .hero{padding:130px 0 70px}
+    section{padding:70px 0}
+    .cmp{overflow:visible;border:none}
+    .cmp table{min-width:0;display:block}
+    .cmp tbody{display:block}
+    .cmp tr{display:block;margin-bottom:16px;border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
+    .cmp th{display:none}
+    .cmp td{display:block;border-bottom:1px solid var(--line)}
+    .cmp td:first-child{background:rgba(79,195,247,.08)}
+    .cmp tr td:last-child{border-bottom:none}
+  }
+</style>
+</head>
+<body>
+<div class="bg-glow"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+<div class="grain"></div>
+
+<nav>
+  <div class="nav-in">
+    <div class="logo">
+      <svg class="mark" viewBox="0 0 32 32"><path d="M5 20 L16 6 L27 20 L16 16 Z" fill="url(#lg)"/><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4FC3F7"/><stop offset="1" stop-color="#21D4A6"/></linearGradient></defs></svg>
+      <span>Flux<em>流畅</em></span>
+    </div>
+    <div class="nav-links" id="navLinks">
+      <a href="#pains">痛点</a>
+      <a href="#features">功能</a>
+      <a href="#people">人群</a>
+      <a href="#roadmap">路线</a>
+      <a href="#compare">对比</a>
+      <a class="btn btn-primary" href="#download" style="padding:9px 20px">立即下载</a>
+    </div>
+    <button class="menu-btn" id="menuBtn" aria-label="菜单"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="badge"><span class="dot"></span> Windows · iOS 全平台</div>
+    <h1>让工作，<br><span class="grad">一个都不用你手动搬</span></h1>
+    <p class="lead">Flux 是跨设备省心中枢。手机复制，电脑直接粘贴；写到一半的文档，换个设备接着写。所有麻烦事，它替你跑腿。</p>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="#download">免费下载</a>
+      <a class="btn btn-ghost" href="#features">了解功能</a>
+    </div>
+
+    <div class="flow-stage">
+      <div class="device pc"><div class="scr">Windows · 电脑端</div></div>
+      <div class="flow-line l1" style="top:48%"></div>
+      <div class="flow-line l2" style="top:52%"></div>
+      <div class="flow-msg m1">剪贴板已同步</div>
+      <div class="flow-msg m2">文档接力中…</div>
+      <div class="device phone"><div class="scr">iPhone · 手机端</div></div>
+    </div>
+
+    <div class="hero-stats">
+      <div class="stat"><div class="n">1s</div><div class="l">剪贴板跨端同步</div></div>
+      <div class="stat"><div class="n">≥40%</div><div class="l">次日留存目标</div></div>
+      <div class="stat"><div class="n">100%</div><div class="l">本地·不上传·无AI</div></div>
+    </div>
+  </div>
+</header>
+<section id="pains">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">怕麻烦，就对了</span>
+      <h2>这些破事，别再亲手倒腾</h2>
+      <p>Flux 专为电脑手机重度用户、上班族、日常怕麻烦的人打造。每一件你都该省下心的小事，它都管。</p>
+    </div>
+    <div class="pain-grid">
+      <div class="pain reveal">
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8"/></svg></div>
+        <div><h3>复制粘贴来回倒腾</h3><p>手机上复制个验证码、一段话，还要发给自己或开微信文件传输？Flux 让电脑直接可用。</p></div>
+      </div>
+      <div class="pain reveal">
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+        <div><h3>文档来回拷贝</h3><p>电脑写到一半的文档，换个设备还得靠网盘、邮箱、U 盘？进度自动同步，打开即续。</p></div>
+      </div>
+      <div class="pain reveal">
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg></div>
+        <div><h3>文件堆满找不到</h3><p>下载的、截图的、文稿的，全堆在一起？Flux 自动按类型归档，搜一下就到手。</p></div>
+      </div>
+      <div class="pain reveal">
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <div><h3>设备卡顿空间满</h3><p>不懂清理、怕误删？一键体检、一键清理，大白话告诉你该怎么做，不甩专业名词。</p></div>
+      </div>
+      <div class="pain reveal">
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg></div>
+        <div><h3>互传文件照片麻烦</h3><p>家里多台电脑手机，互传个文件还要开微信？Flux 局域网点对点，一点即到。</p></div>
+      </div>
+      <div class="pain reveal">
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12a8 8 0 1 1-8-8"/><path d="M20 4v4h-4"/></svg></div>
+        <div><h3>误删文件心慌</h3><p>手滑删错重要文件？Flux 自动备份、误删找回，给你一份后悔药。</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features" style="background:linear-gradient(180deg,transparent,rgba(79,195,247,.03),transparent)">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">三层省心</span>
+      <h2>把麻烦事，交给 Flux</h2>
+      <p>从跨设备接力，到本地优化，再到全家互通——所有操作不超过三步，能自动绝不手动。</p>
+    </div>
+    <div class="feat-grid">
+      <div class="feat reveal"><div class="num">第一层 · 跨设备接力</div><h3>剪贴板一键接力</h3><p>手机复制，电脑直接粘贴。文字、图片、链接，1 秒跨端，无需打开任何 App。</p><span class="tag">首发</span></div>
+      <div class="feat reveal"><div class="num">第一层 · 跨设备接力</div><h3>验证码 / 通知同步</h3><p>手机收到的验证码和通知，电脑端自动呈现，点一下填入，不用再手抄。</p><span class="tag">首发</span></div>
+      <div class="feat reveal"><div class="num">第一层 · 跨设备接力</div><h3>跨设备互管</h3><p>电脑管手机、手机管电脑：互发、互找文件，互看设备状态，一目了然。</p><span class="tag">首发</span></div>
+      <div class="feat reveal"><div class="num">第二层 · 本地优化</div><h3>随手拍 · 自动整理</h3><p>拍张纸、名片、手写笔记，自动转成可编辑文字并归好档，拍照即整理。</p></div>
+      <div class="feat reveal"><div class="num">第二层 · 本地优化</div><h3>文档跨端接力</h3><p>电脑写一半，手机接着看、接着改，进度自动同步，无感接力。</p></div>
+      <div class="feat reveal"><div class="num">第二层 · 本地优化</div><h3>一键清理 · 设备体检</h3><p>腾空间、清后台、查电量和存储，用大白话告诉你怎么做，不怕误删。</p></div>
+      <div class="feat reveal"><div class="num">第三层 · 全家互通</div><h3>照片自动归档</h3><p>按时间、地点、人物自动归到相册，重复的、相似的一键找出，帮你删。</p></div>
+      <div class="feat reveal"><div class="num">第三层 · 全家互通</div><h3>全家设备一屏看</h3><p>一台设备看家里所有电脑手机的电压、存储、在线状态，一眼知道谁该充电。</p></div>
+      <div class="feat reveal"><div class="num">第三层 · 全家互通</div><h3>远程帮家人</h3><p>老人手机卡了、满了，你远程帮忙清理，不用上门，只清垃圾不动数据。</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="people">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">为谁而做</span>
+      <h2>三类人，一个省心中枢</h2>
+      <p>不管你是上班族、开发者，还是普通家庭用户，Flux 都让设备更顺手。</p>
+    </div>
+    <div class="people-grid">
+      <div class="person reveal">
+        <div class="avatar">办</div>
+        <h3>上班族 / 文稿族</h3>
+        <p>写文档、做文稿、整理资料，双端无感接力，把时间花在工作上，而不是倒腾文件上。</p>
+        <div class="mini"><span>剪贴板接力</span><span>文稿接力</span><span>随手拍整理</span></div>
+      </div>
+      <div class="person reveal">
+        <div class="avatar">码</div>
+        <h3>开发者</h3>
+        <p>手机看到好代码，电脑直接粘贴；代码文件、日志随手传，本地工具集一应俱全。</p>
+        <div class="mini"><span>代码接力</span><span>本地预览</span><span>编码转换</span></div>
+      </div>
+      <div class="person reveal">
+        <div class="avatar">家</div>
+        <h3>普通家庭用户</h3>
+        <p>不懂技术、怕弄坏，只想能正常用就行。Flux 用大白话帮你管好家里每一台设备。</p>
+        <div class="mini"><span>一键清理</span><span>全家互通</span><span>远程帮家人</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="roadmap" style="background:linear-gradient(180deg,transparent,rgba(124,108,255,.04),transparent)">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">路线图</span>
+      <h2>一步步，变省心</h2>
+    </div>
+    <div class="roadmap">
+      <div class="step reveal"><span class="dot"></span><div class="phase">MVP · 首发</div><h3>打通跨设备接力</h3><p>剪贴板一键接力、验证码同步、跨设备互管面板。核心价值先落地，双端可用。</p></div>
+      <div class="step reveal"><span class="dot"></span><div class="phase">P1 · 上线后补</div><h3>补齐省心与高频功能</h3><p>随手拍转文字、文稿接力、格式统一、一键清理、设备体检、网速自检、照片归档。</p></div>
+      <div class="step reveal"><span class="dot"></span><div class="phase">P2 · 迭代</div><h3>完善管理与全家互通</h3><p>自动归档、重要文件保护、开发工具集合、家庭互传、全家状态、远程帮家人。</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="compare">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">为什么是 Flux</span>
+      <h2>别人做传文件，你做全流程省心</h2>
+    </div>
+    <div class="cmp reveal">
+      <table>
+        <colgroup><col style="width:18%"><col style="width:26%"><col style="width:20%"><col style="width:18%"><col style="width:18%"></colgroup>
+        <thead><tr><th>对比项</th><th>Flux 流畅</th><th>微软 Phone Link</th><th>苹果生态</th><th>LocalSend</th></tr></thead>
+        <tbody>
+          <tr><td>核心定位</td><td class="yes">工作全流程省心助手</td><td>手机连电脑投屏/通知</td><td>苹果设备间接力</td><td>点对点传文件</td></tr>
+          <tr><td>跨平台</td><td class="yes">Windows + iOS</td><td>Win + 安卓为主</td><td>仅苹果设备</td><td>多平台但仅传文件</td></tr>
+          <tr><td>功能范围</td><td class="yes">接力+文稿+清理+全家互通</td><td>通知/投屏/通话</td><td>接力/剪贴板/文件</td><td>仅文件传输</td></tr>
+          <tr><td>隐私</td><td class="yes">全本地·不上传·无AI</td><td>云端依赖</td><td>云端 iCloud</td><td>无</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="download" style="padding-top:20px">
+  <div class="wrap">
+    <div class="cta-box reveal">
+      <h2>让设备，替你跑腿</h2>
+      <p>Flux 目前处于开发阶段，即将开放下载。留下你的关注，第一时间体验双端省心。</p>
+      <div class="hero-cta" style="justify-content:center">
+        <a class="btn btn-primary" href="#" id="notifyBtn">关注开发进度</a>
+        <a class="btn btn-ghost" href="#features">先看功能</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="foot-in">
+    <div>Flux 流畅 · 跨设备省心中枢</div>
+    <div>本地优先 · 尊重隐私 · 全平台</div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var menuBtn=document.getElementById('menuBtn'),nav=document.getElementById('navLinks');
+  if(menuBtn&&nav){menuBtn.addEventListener('click',function(){nav.classList.toggle('open');});}
+
+  var notifyBtn=document.getElementById('notifyBtn');
+  if(notifyBtn){notifyBtn.addEventListener('click',function(e){e.preventDefault();var t=document.createElement('div');
+    t.textContent='已关注！开发进度会第一时间同步给你。';t.style.cssText='position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--grad);color:#04121a;padding:12px 24px;border-radius:999px;font-weight:600;z-index:999;box-shadow:0 8px 30px rgba(79,195,247,.4)';
+    document.body.appendChild(t);setTimeout(function(){t.style.opacity='0';t.style.transition='opacity .5s';},2200);setTimeout(function(){t.remove();},2800);});}
+
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
+})();
+</script>
+</body>
+</html>
